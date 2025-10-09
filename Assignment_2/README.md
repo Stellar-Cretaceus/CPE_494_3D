@@ -1,8 +1,6 @@
 # Assignment 2: 3D Kinetic Sculpture
-<img width="1285" height="582" alt="image" src="https://github.com/user-attachments/assets/b58b1f37-0db4-4d53-977f-5cd3aca15fb7" />   
-
-https://github.com/user-attachments/assets/da2af54f-1be9-40f7-8e72-7fa666949373
-
+<img width="1280" height="581" alt="image" src="https://github.com/user-attachments/assets/12493126-f52e-4b2e-ad5a-3bfa8e2dbe71" />  
+https://github.com/user-attachments/assets/38f91764-47fe-4ed0-bf2a-e68d98f8e0f3   
 > "Khaenri'ah... didn't fall, did it? Since you're still here..."
 
 ## Concept
@@ -14,6 +12,7 @@ Blending the orbit of cubes with the cube in the background, making the 2D turns
 - Background: 2D Plane map on a quad   
 - Orbit Cube: Generated cubes that orbit around certain points, making the 2D picture becomes 3D
 - Floating Cube: Generated cubes that goes up and down while spinning itself
+- Directional Light: Lightsource that give moderate red tint near screen and huge red tint when far away
 
 
 ## Asset Credits
