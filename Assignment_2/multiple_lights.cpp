@@ -310,8 +310,8 @@ int main()
         // point light 3
         lightingShader.setVec3("pointLights[2].position", pointLightPositions[2]);
         lightingShader.setVec3("pointLights[2].ambient", 0.05f, 0.05f, 0.05f);
-        lightingShader.setVec3("pointLights[2].diffuse", 5.0f, 0.3f, 0.3f);
-        lightingShader.setVec3("pointLights[2].specular", 5.0f, 0.3f, 0.3f);
+        lightingShader.setVec3("pointLights[2].diffuse", 10.0f, 0.3f, 0.3f);
+        lightingShader.setVec3("pointLights[2].specular", 10.0f, 0.3f, 0.3f);
         lightingShader.setFloat("pointLights[2].constant", 1.0f);
         lightingShader.setFloat("pointLights[2].linear", 0.014f);
         lightingShader.setFloat("pointLights[2].quadratic", 0.0007f);
@@ -498,36 +498,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
 }
-
-//// glfw: whenever the mouse moves, this callback is called
-//// -------------------------------------------------------
-//void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
-//{
-//    float xpos = static_cast<float>(xposIn);
-//    float ypos = static_cast<float>(yposIn);
-//
-//    if (firstMouse)
-//    {
-//        lastX = xpos;
-//        lastY = ypos;
-//        firstMouse = false;
-//    }
-//
-//    float xoffset = xpos - lastX;
-//    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
-//
-//    lastX = xpos;
-//    lastY = ypos;
-//
-//    camera.ProcessMouseMovement(xoffset, yoffset);
-//}
-//
-//// glfw: whenever the mouse scroll wheel scrolls, this callback is called
-//// ----------------------------------------------------------------------
-//void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
-//{
-//    camera.ProcessMouseScroll(static_cast<float>(yoffset));
-//}
 
 // utility function for loading a 2D texture from file
 // ---------------------------------------------------
