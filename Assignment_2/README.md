@@ -1,5 +1,7 @@
 # Assignment 2: 3D Kinetic Sculpture
-<img width="1285" height="582" alt="image" src="https://github.com/user-attachments/assets/b58b1f37-0db4-4d53-977f-5cd3aca15fb7" />
+<img width="1285" height="582" alt="image" src="https://github.com/user-attachments/assets/b58b1f37-0db4-4d53-977f-5cd3aca15fb7" />   
+
+https://github.com/user-attachments/assets/da2af54f-1be9-40f7-8e72-7fa666949373
 
 > "Khaenri'ah... didn't fall, did it? Since you're still here..."
 
