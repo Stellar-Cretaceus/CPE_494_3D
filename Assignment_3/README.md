@@ -21,16 +21,16 @@ This program is inspired by game genre called "Bullet Hell", specially Touhou Pr
 
 
 ## Asset Credits
-Space Background : Texturelabs 
+Space Background : Texturelabs   
 Found in : https://texturelabs.org/textures/sky_143/
 
-Vaporwave Mountain & Path Model : freshlybaked 
+Vaporwave Mountain & Path Model : freshlybaked   
 Found in : https://sketchfab.com/3d-models/90s-vaporwave-neon-grid-animated-0b8208f8e2fc46d19a086e353c9ae63a
 
-Ninja Samurai Girl : Ready Player Me 
+Ninja Samurai Girl : Ready Player Me   
 Found in : https://sketchfab.com/3d-models/female-full-body-ninja-avatar-490dfcc890694c3cb711869fd9f98e4b
 
-Bullet Orbs: themighty808
+Bullet Orbs: themighty808   
 Found in : https://sketchfab.com/3d-models/orb-of-chi-5b9b6b38c601459e95b24184d68e3255
 
 Flying Animation: Mixamo
