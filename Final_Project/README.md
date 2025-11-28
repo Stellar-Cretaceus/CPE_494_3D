@@ -1,4 +1,4 @@
-# Final Project (Work In Progress) So/nar Chikd
+# Final Project (Work In Progress) So/nar Child
 
 ## WIP Vid
 https://github.com/user-attachments/assets/7fa79330-066b-497d-89e3-b9b9fe26d459
@@ -17,22 +17,23 @@ https://github.com/user-attachments/assets/7fa79330-066b-497d-89e3-b9b9fe26d459
 | **Down**     | Crouch *(WIP may add or remove later)*     |
 
 ## Feature (WIP)
-- SHOOT: Player can SHOOT the huge obstacle that blocks our way. Note that we can shoot when we are not jumping, so decide carefully.
+- SHOOT: Player can SHOOT the huge obstacle that blocks our way. Note that we can shoot when we are not jumping, so decide carefully. (Pending Fix: bullet logics)
 
 https://github.com/user-attachments/assets/b7c29fd3-5df0-4985-bcae-a7ac8f4aadc8
-- JUMP: Player can JUMP to evade the lower obstacle.
+- JUMP: Player can JUMP to evade the lower obstacle. (Pending Fix: Smoother Jump)
 
 https://github.com/user-attachments/assets/fee30bff-0325-4916-b2f3-ca81d3834dbd
 - Endless Run: Survive as long as you can do, the game will continuously loop itself. (WIP)
-- ONE LIFE: The game ends when you collide, you only have one life
+- ONE LIFE: The game ends when you collide, you only have one life (Pending Fix: Restart Instead of Shutting Down Game)
   
 https://github.com/user-attachments/assets/6cef9228-301f-4a22-a537-60295d3f5f7f
 - ITEMS: Collide with ITEMS to game powerups (WIP)
 
 ## Possible Feature (WIP)
-- Menu
+- Menu 
 - Crouching
 - Switch Bullet
+- UI and Controls Information
 
 
 ## Asset Credits (NOT THE FINAL ASSET, THIS IS PLACEHOLDER)
