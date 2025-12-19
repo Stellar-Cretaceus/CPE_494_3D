@@ -5,6 +5,9 @@
 ## Gameplay Vid
 https://github.com/user-attachments/assets/4067da30-3867-40b2-9d88-a94b641cf37d
 
+## Itch.io Link
+https://phoomdola.itch.io/solnar-child
+
 ## Concept
 "Solnar Child", A young angel, a celestial being of pure light, has been captured and imprisoned within the crumbling walls of a desecrated, blood-red cathedral. Once a place of worship, the church is now a sprawling, desolate labyrinth that defies the laws of space—an endless corridor of ruin where the exit never appears.   
 The Protagonist: The "Solnar Child," an angel who carries the dual essence of the cosmos within her:
