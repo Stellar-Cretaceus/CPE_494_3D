@@ -59,11 +59,10 @@ float lastFrame = 0.0f;
 
 // Animation state machine
 enum AnimState {
-    MENU, MENU_IDLE,
-    IDLE,
+    IDLE = 1,
     MAGIC, IDLE_MAGIC, MAGIC_IDLE,
     JUMP, IDLE_JUMP, JUMP_IDLE,
-    CROUCH, IDLE_CROUCH, CROUCH_IDLE
+    CROUCH,IDLE_CROUCH, CROUCH_IDLE
 };
 
 struct Orb {
@@ -86,33 +85,6 @@ std::vector<Stone> stones;
 // Scene Pos
 float scenePosX = 0.0f;
 float speed = 2.0f;
-
-//random
-std::random_device rd;
-std::mt19937 generator(rd());
-std::bernoulli_distribution spawnDist(1.0); // 50% chance to spawn stone
-std::bernoulli_distribution scaleDist(0.5); // 50% chance to pick 1.0, else 0.2
-
-//items
-enum ItemType { NONE, SPEAR, SHIELD };
-
-struct Item {
-    float x;
-    ItemType type;
-    bool collected = false;
-};
-
-Item currentItem;
-
-// Spear Mode Flags
-bool isSpearMode = false;
-float spearTimer = 0.0f;
-float autoFireTimer = 0.0f;
-const float AUTO_FIRE_RATE = 0.3f; // Shoots every 0.3 seconds
-
-// Shield Mode Flags
-bool isShieldMode = false;
-float shieldTimer = 0.0f;
 
 
 
@@ -167,7 +139,7 @@ void DrawOrbs(
     const glm::mat4& view,
     const glm::mat4& projection,
     const glm::vec3& cameraPos
-) {
+    ) {
     if (!lightingOrb) return;
 
     orbShader.use();
@@ -236,175 +208,6 @@ void DrawBackgroundPic(
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void DrawModel(Model* model, Shader& shader, glm::vec3 coordinates, glm::vec3 scales, int index)
-{
-    glm::mat4 universalModel = glm::mat4(1.0f);
-    universalModel = glm::translate(universalModel, coordinates);
-    if (index > 0) {
-        float angle = 137.508f * (float)index;
-
-        universalModel = glm::rotate(universalModel, glm::radians(angle), glm::vec3(1, 0, 0)); // Rotate around Y (up)
-    }
-    universalModel = glm::rotate(universalModel, glm::radians(90.0f), glm::vec3(1, 0, 0));
-    universalModel = glm::scale(universalModel, scales);
-
-    shader.setMat4("model", universalModel);
-    model->Draw(shader);
-}
-
-void DrawEnvironment(Model* model, Shader& ourShader, float spacing, float offset, float posY, float posZ, glm::vec3 scale, int index)
-{
-    float playerX = scenePosX;
-    const int viewDistance = 20;
-
-    int minRange = (int)floor(playerX) - viewDistance;
-    int maxRange = (int)ceil(playerX) + viewDistance;
-
-    int startX = (int)floor((float)minRange / spacing) * spacing;
-
-    ourShader.use();
-
-    for (int x = startX; x <= maxRange; x += (int)spacing) {
-        float finalX = (float)x + offset;
-        glm::vec3 pos = glm::vec3(finalX, posY, posZ);
-        DrawModel(model, ourShader, pos, scale, index);
-    }
-}
-
-void SpawnOrb()
-{
-    // spawn orb
-    Orb orb;
-    orb.x = scenePosX + 0.5f;
-    orb.y = 0.2f;
-    orb.z = 0.0f;
-    orb.speed = 7.0f;
-    orb.alive = true;
-    orbs.push_back(orb);
-}
-
-void UpdateOrb()
-{
-    // ----- UPDATE ORB MOVEMENT -----
-    for (auto& orb : orbs) {
-        if (!orb.alive) continue;
-
-        orb.x += orb.speed * deltaTime;
-
-        // destroy if too far
-        if (orb.x > scenePosX + 3.5f)
-            orb.alive = false;
-    }
-}
-
-void RemoveDeadOrb()
-{
-    orbs.erase(
-        std::remove_if(orbs.begin(), orbs.end(),
-            [](const Orb& o) { return !o.alive; }),
-        orbs.end()
-    );
-}
-
-void DetectOrbCollide(std::vector<Orb>& orbs, std::vector<Stone>& stones) {
-    for (auto& orb : orbs) {
-        if (!orb.alive) continue;
-
-        for (size_t i = 0; i < stones.size(); ) {
-            Stone& stone = stones[i];
-
-            // Boundary constants (consider moving these to the Stone/Orb class)
-            float stoneWidth = 0.5f * stone.scale;
-            float stoneHeight = stone.scale;
-            float orbRadius = 0.1f;
-            float groundLevel = 0.0f;
-
-            // Collision Logic
-            bool collideX = fabsf(stone.x - orb.x) < (stoneWidth + orbRadius);
-            bool collideY = (orb.y < groundLevel + stoneHeight) && (orb.y + orbRadius > groundLevel);
-
-            if (collideX && collideY) {
-                // Erase-remove pattern logic
-                stones.erase(stones.begin() + i);
-                orb.alive = false;
-
-                // Once an orb hits one stone, it's dead. 
-                // Stop checking other stones for this specific orb.
-                break;
-            }
-            else {
-                ++i;
-            }
-        }
-    }
-}
-
-void DrawSprite(Shader& shader, unsigned int vao, unsigned int textureID,
-    glm::vec3 position, glm::vec2 scale, float rotation,
-    const glm::mat4& view, const glm::mat4& projection, bool followPlayer)
-{
-    shader.use();
-    glm::mat4 model = glm::mat4(1.0f);
-
-    if (followPlayer) {
-        model = glm::translate(model, glm::vec3(scenePosX + position.x, position.y, position.z));
-    }
-    else {
-        model = glm::translate(model, position);
-    }
-
-    model = glm::rotate(model, glm::radians(rotation), glm::vec3(0.0f, 0.0f, 1.0f));
-    // Apply the aspect-corrected scale
-    model = glm::scale(model, glm::vec3(scale.x, scale.y, 1.0f));
-
-    shader.setMat4("view", view);
-    shader.setMat4("projection", projection);
-    shader.setMat4("model", model);
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-    glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-}
-
-void StoneGeneration()
-{
-    stones.clear(); // Add this line to remove previous stones
-    for (int x = 20; x <= 100; x += 5) {
-        if (spawnDist(generator)) {
-            Stone s;
-            s.x = float(x) + ((rand() % 100) / 100.0f - 0.5f); // optional small random X offset ±0.5
-            s.scale = scaleDist(generator) ? 1.0f : 0.2f;
-            stones.push_back(s);
-        }
-    }
-}
-
-void ItemGeneration()
-{
-    // Reset the single item instance
-    int itemChance = rand() % 100;
-    if (itemChance < 33) {
-        currentItem.x = 52.0f;
-        currentItem.type = (rand() % 2 == 0) ? SPEAR : SHIELD;
-        currentItem.collected = false;
-    }
-    else {
-        currentItem.type = NONE; // No item spawned this lap
-    }
-}
-
-bool CheckCollision(float pX, float pY, float pW, float pH,
-    float oX, float oY, float oW, float oH) {
-    // pX/pY = Player Center, pW/pH = Half-Width/Half-Height
-    // oX/oY = Object Center, oW/oH = Half-Width/Half-Height
-
-    bool collideX = fabsf(oX - pX) < (pW + oW);
-    bool collideY = (pY < oY + oH) && (pY + pH > oY);
-
-    return collideX && collideY;
-}
-
 
 int main() {
     // GLFW initialization
@@ -436,59 +239,33 @@ int main() {
 
     stbi_set_flip_vertically_on_load(true);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     Shader ourShader("anim_model.vs", "anim_model.fs");
     Shader picShader("bg_light.vs", "bg_light.fs");
     Shader orbShader("orbShader.vs", "orbShader.fs");
 
     // Resource paths
-    const std::string modelPath = FileSystem::getPath("resources/objects/angel/angel.dae");
+    const std::string modelPath = FileSystem::getPath("resources/objects/goth_katana/run.dae");
     const std::string idlePath = FileSystem::getPath("resources/objects/goth_katana/run.dae");
     const std::string shootMagicPath = FileSystem::getPath("resources/objects/goth_katana/shoot.dae");
     const std::string jumpPath = FileSystem::getPath("resources/objects/goth_katana/jump.dae");
+    const std::string crouchPath = FileSystem::getPath("resources/objects/goth_katana/crouch.dae");
 
+
+    const std::string katanaPath = FileSystem::getPath("resources/objects/katana/katana.dae");
+    Model* katana = fileExists(katanaPath) ? new Model(katanaPath) : nullptr;
 
     const std::string lightingOrbPath = FileSystem::getPath("resources/objects/bullets/blue_orb/blue_orb.obj");
     Model* lightingOrb = fileExists(lightingOrbPath) ? new Model(lightingOrbPath) : nullptr;
 
-    const std::string pillarPath = FileSystem::getPath("resources/objects/church_bg/pillar.dae");
-    Model* pillar = fileExists(pillarPath) ? new Model(pillarPath) : nullptr;
+    const std::string forestPath = FileSystem::getPath("resources/objects/winter_forest/winter_forest.dae");
+    Model* forest = fileExists(forestPath) ? new Model(forestPath) : nullptr;
 
-    const std::string stonePath = FileSystem::getPath("resources/objects/church_bg/stones/stone_1/stone_1.dae");
+    const std::string stonePath = FileSystem::getPath("resources/objects/winter_forest/black_energy.dae");
     Model* stoneModel = fileExists(stonePath) ? new Model(stonePath) : nullptr;
 
-    const std::string hydrengeaPath = FileSystem::getPath("resources/objects/church_bg/hydrengea/hydrengea.dae");
-    Model* hydrengeaModel = fileExists(hydrengeaPath) ? new Model(hydrengeaPath) : nullptr;
-
-    const std::string floorPath = FileSystem::getPath("resources/objects/church_bg/floor/tile_floor.dae");
-    Model* floorModel = fileExists(floorPath) ? new Model(floorPath) : nullptr;
-
-    const std::string spearPath = FileSystem::getPath("resources/objects/items/sun_spear.dae");
-    Model* spearModel = fileExists(spearPath) ? new Model(spearPath) : nullptr;
-
-    const std::string shieldPath = FileSystem::getPath("resources/objects/items/moon_shield.dae");
-    Model* shieldModel = fileExists(shieldPath) ? new Model(shieldPath) : nullptr;
-
     stbi_set_flip_vertically_on_load(true);
-    unsigned int bg = loadTexture(FileSystem::getPath("resources/textures/red_church.jpg").c_str());
-    unsigned int logo = loadTexture(FileSystem::getPath("resources/textures/logo.png").c_str());
-    int logoWidth = 2100;
-    int logoHeight = 470;
-
-    unsigned int instruction = loadTexture(FileSystem::getPath("resources/textures/instruction.png").c_str());
-    int instructionWidth = 1136;
-    int instructionHeight = 107;
-
-    unsigned int moonMagic = loadTexture(FileSystem::getPath("resources/textures/moon_magic.png").c_str());
-    unsigned int sunMagic = loadTexture(FileSystem::getPath("resources/textures/sun_magic.png").c_str());
-    int magicWidth = 2048;
-    int magicHeight = 2048;
-
-    unsigned int overlayVine = loadTexture(FileSystem::getPath("resources/textures/overlay.png").c_str());
-    unsigned int overlayMoon = loadTexture(FileSystem::getPath("resources/textures/overlay_moon.png").c_str());
-    unsigned int overlaySun = loadTexture(FileSystem::getPath("resources/textures/overlay_sun.png").c_str());
+    unsigned int bg = loadTexture(FileSystem::getPath("resources/textures/grey_wall.jpg").c_str());
 
 
     // Verify files
@@ -513,15 +290,39 @@ int main() {
         shootMagicAnimation = new Animation(shootMagicPath, &ourModel);
     if (fileExists(jumpPath) && canLoadAnimation(jumpPath))
         jumpAnimation = new Animation(jumpPath, &ourModel);
+    if (fileExists(crouchPath) && canLoadAnimation(crouchPath))
+        crouchAnimation = new Animation(crouchPath, &ourModel);
 
     Animator animator(idleAnimation);
 
+    AnimState charState = IDLE;
     float blendAmount = 0.0f;
     float blendRate = 0.055f;
 
+    ///////katana
+    std::string handBone = "RightHand_49";
+    glm::vec3 katanaScale(0.03f);
+    glm::vec3 katanaRotHand(0.0f, 90.0f, 0.0f);
+    glm::vec3 katanaOffsetHand(0.1f, 0.1f, 0.1f);
 
-    StoneGeneration();
-    ItemGeneration();
+    /////generate Stone
+    std::vector<Stone> stones;
+    int maxX = 200; // Max range for obstacles
+
+    std::random_device rd;
+    std::mt19937 generator(rd());
+    std::bernoulli_distribution spawnDist(1.0); // 50% chance to spawn stone
+    std::bernoulli_distribution scaleDist(0.5); // 50% chance to pick 1.0, else 0.2
+
+    for (int x = 25; x <= maxX; x += 5) {
+        if (spawnDist(generator)) {
+            Stone s;
+            s.x = float(x) + ((rand() % 100) / 100.0f - 0.5f); // optional small random X offset ±0.5
+            s.scale = scaleDist(generator) ? 1.0f : 0.2f;
+            stones.push_back(s);
+        }
+    }
+
 
     //// quad vertice (test)
     float quadVertices[] = {
@@ -555,49 +356,17 @@ int main() {
     float frozenJumpTime = 0.0f;
     float frozenCrouchTime = 0.0f;
 
-    AnimState charState = MENU;
-
     // Render loop
     while (!glfwWindowShouldClose(window)) {
         float currentFrame = glfwGetTime();
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
 
-        // --- Movement and State Logic ---
-        if (charState == MENU) {
-            // Model stays at x = 0
-            scenePosX = 10.0f;
-            camera.Position.x = 15.0f; // Camera fixed at 10
-
-            // Press Z to transition
-            if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
-                charState = MENU_IDLE;
-            }
-        }
-        else if (charState == MENU_IDLE) {
-            // Model starts moving
+        //running and stop running
+        if (charState) {
             scenePosX += speed * deltaTime;
-
-            // Camera stays frozen at 10 until model reaches it
-            if (scenePosX >= 14.0f) {
-                charState = IDLE;
-            }
-                camera.Position.x = 15.0;
-
-            
         }
-        else {
-            // Normal IDLE/Gameplay logic
-            scenePosX += speed * deltaTime;
-            camera.Position.x = scenePosX + 1.0f; // Camera follows model
-
-            // Handle the warp-back logic from the previous step if desired
-            if (scenePosX >= 90.0f) {
-                scenePosX = 10.0f;
-                StoneGeneration(); 
-                ItemGeneration();
-            }
-        }
+        camera.Position.x = scenePosX + 1.0f; // start at x=2, move with scene
 
         // --- Player position & jump logic ---
         float baseY = -0.4f;       // standing bottom
@@ -634,68 +403,28 @@ int main() {
         float playerY = posY; // bottom of player
 
         for (auto& stone : stones) {
-            if (CheckCollision(playerX, playerY, 0.2f, 1.0f, 
-                stone.x, 0.0f, stone.scale, 0.25f * stone.scale)) {
+            float stoneX = stone.x;
+            float stoneY = 0.0f;                  // ground level
+            float stoneWidth = stone.scale + 0.1f;  // half-width scaled
+            float stoneHeight = 0.25f * stone.scale;  // height scaled
 
-                // If we have a shield, we are immune
-                if (isShieldMode) {
-                    continue;
-                }
+            // X collision
+            bool collideX = fabsf(stoneX - playerX) < stoneWidth;
 
-                charState = MENU;
-                blendAmount = 0.0f;     // Reset the animation blending
-                jumpEndY = 0.0f;        // Clear stored jump height
-                isSpearMode = false;  // Turn off spear mode on death
-                spearTimer = 0.0f;    // Reset timer
-                animator.PlayAnimation(idleAnimation, NULL, idleAnimation, 0.0f, 0.0f, 0.0f, 0.0f);
+            // Y collision: check vertical overlap
+            bool collideY = (playerY < stoneY + stoneHeight) && (playerY + playerHeight > stoneY);
+
+            if (collideX && collideY) {
+                std::cout << "Player died! Collided with stone at X = " << stoneX << std::endl;
+                glfwSetWindowShouldClose(window, true);
                 break;
             }
         }
 
-        if (currentItem.type != NONE && !currentItem.collected) {
-            if (CheckCollision(playerX, playerY, 0.2f, 1.0f,
-                currentItem.x, -0.4f, 0.5f, 0.5f)) { // Item bounds
-                currentItem.collected = true;
-                if (currentItem.type == SPEAR) {
-                    isSpearMode = true;
-                    spearTimer = 10.0f;
-                }
-                else if (currentItem.type == SHIELD) { // Add this block
-                    isShieldMode = true;
-                    shieldTimer = 10.0f;
-                }
-            }
-        }
+
 
 
         processInput(window);
-
-        // --- Power-up Timer & Auto-Fire Logic ---
-        if (isSpearMode) {
-            spearTimer -= deltaTime;
-            autoFireTimer += deltaTime;
-
-            // Automatic Shooting every 0.3 seconds
-            if (autoFireTimer >= AUTO_FIRE_RATE) {
-                SpawnOrb();
-                autoFireTimer = 0.0f;
-            }
-
-            // Power-up expires
-            if (spearTimer <= 0.0f) {
-                isSpearMode = false;
-                spearTimer = 0.0f;
-            }
-        }
-
-        // --- Shield Timer logic ---
-        if (isShieldMode) {
-            shieldTimer -= deltaTime;
-            if (shieldTimer <= 0.0f) {
-                isShieldMode = false;
-                shieldTimer = 0.0f;
-            }
-        }
 
 
         float duration = shootMagicAnimation->GetDuration();
@@ -719,15 +448,29 @@ int main() {
                     animator.m_CurrentTime, 0.0f, animator.m_lowerTime, blendAmount);
                 charState = IDLE_JUMP;
             }
+
+            // --- Crouch trigger ---
+            if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS && crouchAnimation) {
+                blendAmount = 0.0f;
+                animator.PlayAnimation(idleAnimation, crouchAnimation, idleAnimation,
+                    animator.m_CurrentTime, 0.0f, animator.m_lowerTime, blendAmount);
+                charState = IDLE_CROUCH;
+            }
             break;
 
             // -------------------------------
             // MAGIC sequence (same as before)
         case IDLE_MAGIC:
             if (shootMagicAnimation) {
-                if (blendAmount <= 0.05f) {
+                if (blendAmount <= 0.1f) {
                     // spawn orb
-                    SpawnOrb();
+                    Orb orb;
+                    orb.x = scenePosX + 0.5f;
+                    orb.y = 0.2f;
+                    orb.z = 0.0f;
+                    orb.speed = 7.0f;
+                    orb.alive = true;
+                    orbs.push_back(orb);
                 }
 
                 blendAmount += 0.1f;
@@ -785,15 +528,15 @@ int main() {
                 else if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS && jumpAnimation) {
                     blendAmount = 0.0f;
                     animator.PlayAnimation(idleAnimation, jumpAnimation, idleAnimation,
-                        animator.m_CurrentTime, 0.0f, animator.m_lowerTime, blendAmount);
+                    animator.m_CurrentTime, 0.0f, animator.m_lowerTime, blendAmount);
                     charState = IDLE_JUMP;
                 }
             }
             break;
 
 
-            // -------------------------------
-            // JUMP sequence
+        // -------------------------------
+        // JUMP sequence
         case IDLE_JUMP:
             if (jumpAnimation) {
                 blendAmount += 0.1f;
@@ -836,13 +579,60 @@ int main() {
                 }
             }
             break;
-        case MENU:
+        //////////
+        case IDLE_CROUCH:
+            if (crouchAnimation) {
+                blendAmount += 0.1f;
+                blendAmount = fmin(blendAmount, 1.0f);
+                animator.PlayAnimation(idleAnimation, crouchAnimation, idleAnimation,
+                    animator.m_CurrentTime, animator.m_CurrentTime2, animator.m_lowerTime, blendAmount);
+                if (blendAmount >= 1.0f) {
+                    animator.PlayAnimation(crouchAnimation, NULL, idleAnimation,
+                        animator.m_CurrentTime2, 0.0f, animator.m_lowerTime, 0.0f);
+                    charState = CROUCH;
+                }
+            }
             break;
-        case MENU_IDLE:
+        case CROUCH:
+            if (crouchAnimation) {
+                animator.PlayAnimation(crouchAnimation, idleAnimation, idleAnimation,
+                    animator.m_CurrentTime, 0.0f, animator.m_lowerTime, 0.0f);
+
+                // If player releases down key, start transition to idle
+                if (glfwGetKey(window, GLFW_KEY_DOWN) != GLFW_PRESS) {
+                    charState = CROUCH_IDLE;
+                    blendAmount = 0.0f;
+                    frozenCrouchTime = animator.m_CurrentTime;
+                }
+            }
             break;
 
+        case CROUCH_IDLE:
+            if (crouchAnimation) {
+                blendAmount += 0.1f;
+                blendAmount = fmin(blendAmount, 1.0f);
+                animator.PlayAnimation(crouchAnimation, idleAnimation, idleAnimation,
+                    frozenCrouchTime, animator.m_CurrentTime2, animator.m_lowerTime, blendAmount);
+
+                // Transition back to IDLE once blend is done
+                if (blendAmount >= 1.0f) {
+                    animator.PlayAnimation(idleAnimation, NULL, idleAnimation,
+                        animator.m_CurrentTime2, 0.0f, animator.m_lowerTime, 0.0f);
+                    charState = IDLE;
+                }
+
+                // Optional: if player presses down again during CROUCH_IDLE, restart crouch
+                else if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS) {
+                    charState = CROUCH;
+                }
+            }
+            break;
 
         }
+
+
+
+
 
         // Update animator
         if (charState == IDLE_MAGIC || charState == MAGIC || charState == MAGIC_IDLE)
@@ -854,11 +644,58 @@ int main() {
             animator.UpdateAnimation(deltaTime, {});
         }
 
-        UpdateOrb();
-        DetectOrbCollide(orbs, stones);
-        RemoveDeadOrb();
+        // ----- UPDATE ORB MOVEMENT -----
+        for (auto& orb : orbs) {
+            if (!orb.alive) continue;
+
+            orb.x += orb.speed * deltaTime;
+
+            // destroy if too far
+            if (orb.x > scenePosX + 3.5f)
+                orb.alive = false;
+        }
+
+        // ----- ORB HIT DETECTION -----
+        for (auto& orb : orbs) {
+            if (!orb.alive) continue;
+
+            for (size_t i = 0; i < stones.size(); ) {
+                Stone& stone = stones[i];
+                float stoneX = stone.x;
+                float stoneY = 0.0f;                  // ground level
+                float stoneWidth = 0.5f * stone.scale;  // half-width scaled
+                float stoneHeight = stone.scale;  // height scaled
+
+                float orbX = orb.x;
+                float orbY = orb.y;
+                float orbRadius = 0.1f; // adjust as needed
+
+                // X overlap
+                bool collideX = fabsf(stoneX - orbX) < (stoneWidth + orbRadius);
+
+                // Y overlap
+                bool collideY = (orbY < stoneY + stoneHeight) && (orbY + orbRadius > stoneY);
+
+                if (collideX && collideY) {
+                    stones.erase(stones.begin() + i); // remove stone
+                    orb.alive = false;                // destroy orb
+                }
+                else {
+                    ++i;
+                }
+            }
+        }
 
 
+        // --------------------------------
+
+        // remove dead orbs
+        orbs.erase(
+            std::remove_if(orbs.begin(), orbs.end(),
+                [](const Orb& o) { return !o.alive; }),
+            orbs.end()
+        );
+        // -------------------------------
 
         // Render
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
@@ -876,7 +713,7 @@ int main() {
 
         //draw model
         glm::mat4 model = glm::mat4(1.0f);
-
+        
 
         model = glm::translate(model, glm::vec3(scenePosX, posY, 0.0f));
         model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0, 1, 0));
@@ -885,43 +722,53 @@ int main() {
 
         ourModel.Draw(ourShader);
 
+        //if (katana && charState == MAGIC) { // Only draw katana while slashing
+        //    glm::mat4 boneMat = GetBoneMatrix(ourModel, animator, handBone);
+        //    glm::mat4 katanaMat = model * boneMat;
+
+        //    // Apply attachment transform
+        //    katanaMat = glm::translate(katanaMat, katanaOffsetHand);
+        //    katanaMat = glm::rotate(katanaMat, glm::radians(katanaRotHand.x), glm::vec3(1, 0, 0));
+        //    katanaMat = glm::rotate(katanaMat, glm::radians(katanaRotHand.y), glm::vec3(0, 1, 0));
+        //    katanaMat = glm::rotate(katanaMat, glm::radians(katanaRotHand.z), glm::vec3(0, 0, 1));
+        //    katanaMat = glm::scale(katanaMat, katanaScale);
+
+        //    ourShader.setMat4("model", katanaMat);
+        //    for (size_t i = 0; i < katana->meshes.size(); ++i)
+        //        katana->meshes[i].Draw(ourShader);
+        //}
+
+
+
 
         for (auto& stone : stones) {
             if (stone.x > 0) {
                 glm::mat4 stoneModelMat = glm::mat4(1.0f);
-                stoneModelMat = glm::translate(stoneModelMat, glm::vec3(stone.x, -0.4f, -0.2f));
-                stoneModelMat = glm::rotate(stoneModelMat, glm::radians(90.0f), glm::vec3(0, 1, 0));
+
+                // Translate to stone position
+                stoneModelMat = glm::translate(stoneModelMat, glm::vec3(stone.x, -0.2f, 0.0f));
+
+                // Scale according to random scale
                 stoneModelMat = glm::scale(stoneModelMat, glm::vec3(stone.scale));
+
+                // Set shader and draw
                 ourShader.setMat4("model", stoneModelMat);
-                stoneModel->Draw(ourShader); 
+
+                // Use your mesh pointer, not the struct
+                stoneModel->Draw(ourShader);  // <-- or whatever your Mesh* is
             }
         }
 
-        // --- Draw Item (Spear or Shield) ---
-        if (currentItem.type != NONE && !currentItem.collected) {
-            Model* modelToDraw = nullptr;
-            if (currentItem.type == SPEAR) modelToDraw = spearModel;
-            else if (currentItem.type == SHIELD) modelToDraw = shieldModel;
 
-            if (modelToDraw) {
-                // Position it at the ground level (same as stones)
-                // Adjust the scale (0.3f) as needed for your model size
-                DrawModel(modelToDraw, ourShader,
-                    glm::vec3(currentItem.x, 0.5f, 0.0f),
-                    glm::vec3(0.3f), 0);
-            }
+        if (forest) {
+            glm::mat4 forestModel = glm::mat4(1.0f);
+            forestModel = glm::translate(forestModel, glm::vec3(40.0f, -1.4f, -20.0f)); // Try moving first
+            forestModel = glm::scale(forestModel, glm::vec3(0.1f, 1.0f, 0.1f));
+            forestModel = glm::rotate(forestModel, glm::radians(180.0f), glm::vec3(1, 0, 0));
+            forestModel = glm::rotate(forestModel, glm::radians(45.0f), glm::vec3(0, 1, 0));  // 4. Translate last
+            ourShader.setMat4("model", forestModel);
+            forest->Draw(ourShader);
         }
-
-        DrawModel(floorModel, ourShader, glm::vec3(0.0f, -0.7f, 0.5f), glm::vec3(1.0f, 1.0f, 1.0f), 0);
-        DrawEnvironment(pillar, ourShader, 10.0f, 0.0f , 1.0f, -1.0f, glm::vec3(1.5f, 1.5f, 1.5f), 0);
-        for (int i = 1; i < 10; i++)
-        {
-            DrawEnvironment(hydrengeaModel, ourShader, 10.0f, float(i), -0.2f, -1.0f, glm::vec3(1.0f, 0.5f, 0.5f), i);
-        }
-        
-
-
-
 
         orbShader.use();
         orbShader.setMat4("view", view);
@@ -936,62 +783,6 @@ int main() {
         picShader.setMat4("projection", projection);
         DrawBackgroundPic(picShader, quadVAO, bg, textureWidth, textureHeight,
             scenePosX, view, projection);
-        if (charState == MENU)
-        {
-            DrawSprite(picShader, quadVAO, logo, glm::vec3(camera.Position.x, 1.25f, -0.2f)
-                , glm::vec2(1.0f * ((float)logoWidth / (float)logoHeight), 1.0f), 0.0f, view, projection, false);
-
-            DrawSprite(picShader, quadVAO, instruction, glm::vec3(camera.Position.x, 0.5f, -0.5f)
-                , glm::vec2(0.25f * ((float)instructionWidth / (float)instructionHeight), 0.25f), 0.0f, view, projection, false);
-        }
-
-        // --- Draw Magic Effects ---
-        float magicAspect = (float)magicWidth / (float)magicHeight;
-        glm::vec2 magicScale = glm::vec2(1.5f * magicAspect, 1.5f); // Scale size as needed
-
-        // Moon Shield Effect (Centered on Player)
-        if (isShieldMode) {
-            float shieldPulse = (shieldTimer / 10.0f);
-            glm::vec2 dynamicShieldScale = glm::vec2(1.5f * magicAspect * shieldPulse, 1.5f * shieldPulse);
-
-            DrawSprite(picShader, quadVAO, moonMagic,
-                glm::vec3(0.0f, posY + 0.5f, 0.1f),
-                dynamicShieldScale, currentFrame * 100.0f, view, projection, true);
-        }
-
-        // Sun Spear Effect (Ahead of Player)
-        if (isSpearMode) {
-            float spearPulse = glm::clamp(spearTimer / 3.0f, 0.0f, 1.0f);
-            glm::vec2 dynamicSpearScale = glm::vec2(1.5f * magicAspect * spearPulse, 1.5f * spearPulse);
-
-            DrawSprite(picShader, quadVAO, sunMagic,
-                glm::vec3(0.5f, posY + 0.5f, 0.1f),
-                dynamicSpearScale, 0.0f, view, projection, true);
-        }
-
-        // --- Draw Mode Overlays ---
-        float screenAspect = (float)SCR_WIDTH / (float)SCR_HEIGHT;
-        glm::vec2 overlayScale = glm::vec2(2.5f * screenAspect, 2.5f);
-
-        if (isShieldMode) {
-            // Draw Moon Overlay when Shield is active
-            DrawSprite(picShader, quadVAO, overlayMoon,
-                glm::vec3(camera.Position.x, 0.5f, -0.01f),
-                overlayScale, 0.0f, view, projection, false);
-        }
-        else if (isSpearMode) {
-            // Draw Sun Overlay when Spear is active
-            DrawSprite(picShader, quadVAO, overlaySun,
-                glm::vec3(camera.Position.x, 0.5f, -0.01f),
-                overlayScale, 0.0f, view, projection, false);
-        }
-        else {
-            // Optional: Draw your original vines when no mode is active
-            DrawSprite(picShader, quadVAO, overlayVine,
-                glm::vec3(camera.Position.x, 0.5f, -0.01f),
-                overlayScale, 0.0f, view, projection, false);
-        }
-
 
 
         glfwSwapBuffers(window);
