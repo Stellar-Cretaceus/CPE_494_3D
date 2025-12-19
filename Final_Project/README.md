@@ -1,4 +1,4 @@
-# Final Project (Work In Progress) Solnar Child
+# Final Project (Work In Progress) So/nar Child
 
 ## WIP Vid
 https://github.com/user-attachments/assets/7fa79330-066b-497d-89e3-b9b9fe26d459
